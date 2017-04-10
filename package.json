@@ -1,5 +1,5 @@
 {
-  "name": "mycart",
+  "name": "groupchat",
   "version": "1.0.0",
   "description": "",
   "main": "cqq.js",
@@ -13,6 +13,8 @@
     "cookie-parser": "^1.4.3",
     "express": "^4.15.2",
     "express-handlebars": "^3.0.0",
-    "express-session": "^1.15.2"
+    "express-session": "^1.15.2",
+    "mongoose": "^4.9.4",
+    "nodemailer": "^4.0.0"
   }
 }
