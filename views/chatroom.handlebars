@@ -1,0 +1,99 @@
+<style media="screen">
+    /*#msg_group {
+        position: fixed;
+        bottom: 8px;
+    }*/
+    #message, #msg_group {
+        width: 70%;
+    }
+    .chat {
+        border: black 2px solid;
+        background-color: #f7f5a5;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    .chat>* {
+        margin-top: 15px;
+        margin-bottom: 15px;
+        margin-left: 5px;
+    }
+    .chat>.date{
+        text-align: center;
+    }
+    .chat>p {
+        text-indent: 30px;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+</style>
+<div id="info" lastUpdated={{lastUpdated}} user={{username}} style="display: none">
+</div>
+<div id="hello" class="jumbotron">
+    <h1 class="display-1 text-center">Hello, {{username}}!</h1>
+</div>
+<div id="chats">
+    {{#each chats}}
+        <div class="chat">
+            <p class="date">{{timestamp}}</p>
+            <h2><span class="label label-lg label-info">{{sender}} said:</span></h2>
+            <p class="content alert alert-dismissible alert-success">{{content}}</p>
+        </div>
+    {{/each}}
+</div>
+<div id="msg_group">
+    <label for="message">Your Message</label>
+    <input id="message" type="text" name="message">
+    <button class="btn btn-default" type="button">Send</button>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        setTimeout(function () {
+            $("#hello").fadeOut("slow", function () {
+                $(this).remove();
+            })
+        }, 1000);
+        $("#message").keypress(function (event) {
+            if(event.which == 13) {
+                // event.preventDefault();
+                if ($(this).val() != "") {
+                    $.post("/chatroom", {
+                        sender: $("#info").attr("user"),
+                        timestamp: Number(Date.now()),
+                        content: $(this).val()
+                    })
+                    $(this).val("");
+                }
+            }
+        });
+        $(".btn").click(function () {
+            if($("#message").val() != ""){
+                $("#message").val("");
+            }
+        });
+        (function poll () {
+            setTimeout(function () {
+                $.get(
+                    "/chatroom?lastUpdated="+Number($("#info").attr("lastUpdated")),
+                    function (data) {
+                        if(data.length) {
+                            data = JSON.parse(data);
+                            console.log(data);
+                            if(data.length) {
+                                $("#info").attr("lastUpdated", data[data.length-1].timestamp);
+                                for(let d of data) {
+                                    $("#chats").append($("<div class='chat'>")
+                                        .append($("<p class='date'>").text(d.timestamp))
+                                        .append($("<h2>").append($("<span class='label label-lg label-info'>").text(d.sender+" said:")))
+                                        .append($("<p class='content alert alert-dismissible alert-success'>").text(d.content)));
+                                }
+                            }
+                        }
+                        poll();
+                    }
+                )
+            }, 1000);
+        })();
+    })
+</script>

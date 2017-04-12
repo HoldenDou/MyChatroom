@@ -8,3 +8,6 @@ var chatHistorySchema = mongoose.Schema({
         content: String
     }]
 })
+
+var ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);
+module.exports = ChatHistory;

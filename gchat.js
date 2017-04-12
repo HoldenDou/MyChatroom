@@ -24,6 +24,23 @@ UserList.find(function (err, found) {
         password: "000000"
     }).save()
 })
+// Setup ChatHistory
+var ChatHistory = require("./models/chat_history.js");
+ChatHistory.find(function (err, found) {
+	if (found.length) {
+		return;
+	}
+	new ChatHistory({
+		lastUpdated: Date.now(),
+		chats: [
+			{
+				sender: "Admin",
+				timestamp: Number(Date.now()),
+				content: "Welcome"
+			}
+		]
+	}).save();
+})
 // set up handlebars view engine
 var handlebars = require('express-handlebars')
 	.create({
@@ -133,7 +150,51 @@ app.post("/register", function (req, res) {
     })
 });
 
+app.get("/chatroom", function (req, res) {
+	if (!req.session.username) {
+		req.session.flash = {
+			type: "warning",
+			intro: "Session Timeout",
+			message: "<h1>Please Login Again</h1>"
+		}
+		return res.redirect(303, "/");
+	}
+	if(!req.query.lastUpdated) {
+		ChatHistory.find(function (err, history) {
+			history = history[0];
+			res.render("chatroom", {
+				lastUpdated: Number(Date.now()), // Server time
+				username: req.session.username,
+				chats: history.chats
+			});
+		})
+	} else { // poll
+		ChatHistory.find(function (err, history) {
+			history = history[0];
+			if(Number(history.chats[history.chats.length-1].timestamp) <= Number(req.query.lastUpdated)) {
+				return res.send("[]");
+			}
+			// var newChats = history.chats.filter(function (chat) {
+			// 	return Number(chat.timestamp) > Number(req.query.lastUpdated);
+			// });
+			var newChats = [];
+			for(let i=history.chats.length-1; Number(history.chats[i].timestamp) > Number(req.query.lastUpdated); --i) {
+				newChats.push(history.chats[i]);
+			}
+			res.send(JSON.stringify(newChats.reverse()));
+		})
+	}
+});
 
+app.post("/chatroom", function (req, res) {
+	console.log(req.body);
+	req.body.timestamp = Number(Date.now()); // Server time
+	ChatHistory.update({}, {$push: {chats: req.body}}, {upsert: true}, function () {
+		res.send(null);
+	}, function (err) {
+		console.log(err.toString());
+	})
+})
 
 app.use(function (err, req, res, next) {
     console.log("Uncaught Error");
